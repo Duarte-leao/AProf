@@ -63,9 +63,9 @@ plt.show()
 num_labels = 2
 num_features = 2
 
-C0 = random.normal([0,0],[1,1], size=[10,2])
-C1 = random.normal([0,3],[1,1], size=[10,2])
-C2 = random.normal([2,2],[1,1], size=[10,2])
+C0 = random.normal([0,0],1, size=[10,2])
+C1 = random.normal([0,3],1, size=[10,2])
+C2 = random.normal([2,2],1, size=[10,2])
 plt.scatter(C0[:,0],C0[:,1], color = 'red')
 plt.scatter(C1[:,0],C1[:,1], color = 'green')
 plt.scatter(C2[:,0],C2[:,1], color = 'blue')
@@ -73,36 +73,78 @@ plt.show()
 
 #2.2
 
-C = np.concatenate((C0, C1, C2), axis=0)
-C = np.concatenate([np.ones((30,1)), C], axis=1)
+Featuers = np.concatenate((C0, C1, C2), axis=0)
+Featuers = np.concatenate([np.ones((30,1)), Featuers], axis=1)
 
 n_iter=100
 Y = labels = np.array([0]*10 + [1]*10 + [2]*10)
 ind = np.random.permutation(30)
-C = C[ind, :]
-Y = Y[ind]
+Featuers = Featuers[ind, :]
+y_1 = Y[ind]
 
-weights = np.zeros((num_labels+1,num_features+1))
+W = np.zeros((num_labels+1,num_features+1))
 
-while epochs < 100:
-    for x, y in zip(C , Y): 
-        print(y)
-        y_pred = np.argmax(np.matmul(weights.T, x))
-        if y_pred != y: 
-            weights[y,:] = weights[y,:] + x
-            weights[y_pred,:] = weights[y_pred,:] - x
-    epochs = epochs +1
+def multi_class_perceptron( weights, C, Y):
+    epochs = 0
+
+    while epochs < 100:
+        for x, y in zip(C , Y): 
+            y_pred = np.argmax(weights.dot(x))
+            if y_pred != y: 
+                weights[y,:] = weights[y,:] + x
+                weights[y_pred,:] = weights[y_pred,:] - x
+        epochs = epochs +1
+    return weights
     
-y_prediction = []
+def accuracy(weights, C , Y):
+    y_prediction = []
+    for X in C:
+        y_prediction.append(np.argmax(weights.dot(X)))
 
-for X in C:
-    y_prediction.append(np.argmax(np.matmul(weights.T, X)))
+    y_p = np.array(y_prediction)
+    count=0
+    for true, pred in zip(Y, y_prediction):
+        if true == pred:
+            count =count+1
+    print('Accuracy:', count/len(Y))
 
-y_p = np.array(y_prediction)
-count=0
-for true, pred in zip(Y, y_prediction):
-    print(true, pred)
-    if true == pred:
-        count =count+1
-        print(count)
-print('Accuracy:', count/len(Y))
+W_3 = multi_class_perceptron(W, Featuers, y_1)
+accuracy(W_3, Featuers, y_1)
+
+#EXERCISE 4
+
+#Getting image data set 8x8
+
+from sklearn.datasets import load_digits
+data = load_digits()
+
+
+# PLotting the images
+
+""" import matplotlib.pyplot as plt
+plt.gray()
+for i in range(10):
+    plt.matshow(data.images[i])
+plt.show()  """
+
+# Split the data
+
+x = data.data
+y = data.target
+x = np.concatenate([np.ones((x.shape[0],1)), x], axis=1)
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split( x, y, test_size=0.2, random_state=42)
+
+# Run our Perceptron 
+
+W_1 = np.zeros((len(set(y))+1,x.shape[1]))
+W_2 = multi_class_perceptron(W_1, X_train, y_train )
+accuracy(W_2, X_test, y_test)
+
+# Run the Sklearn algorithm of the Perceptron
+
+from sklearn.linear_model import Perceptron
+clf = Perceptron(fit_intercept=False, shuffle=False)
+clf.fit(X_train, y_train)
+print(clf.score(X_train, y_train))
+print(clf.score(X_test, y_test))

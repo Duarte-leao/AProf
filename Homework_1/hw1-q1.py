@@ -22,8 +22,8 @@ class LinearModel(object):
     def __init__(self, n_classes, n_features, **kwargs):
         self.W = np.zeros((n_classes, n_features))
 
-    def update_weight(self, x_i, y_i, **kwargs):
-        raise NotImplementedError
+    # def update_weight(self, x_i, y_i, **kwargs):
+    #     raise NotImplementedError
 
     def train_epoch(self, X, y, **kwargs):
         for x_i, y_i in zip(X, y):
@@ -53,8 +53,12 @@ class Perceptron(LinearModel):
         y_i (scalar): the gold label for that example
         other arguments are ignored
         """
-        # Q1.1a
-        raise NotImplementedError
+        prediction = self.predict(x_i)
+        if prediction != y_i:
+          self.W[prediction] -= x_i
+          self.W[y_i] += x_i
+
+
 
 
 class LogisticRegression(LinearModel):

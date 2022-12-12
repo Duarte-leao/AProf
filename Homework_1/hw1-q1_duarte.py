@@ -42,6 +42,7 @@ class LinearModel(object):
         y_hat = self.predict(X)
         n_correct = (y == y_hat).sum()
         n_possible = y.shape[0]
+        print(n_correct / n_possible)
         return n_correct / n_possible
 
 
@@ -111,13 +112,10 @@ class MLP(object):
         y_hat = self.predict(X)
         n_correct = (y == y_hat).sum()
         n_possible = y.shape[0]
+        print(n_correct / n_possible)
         return n_correct / n_possible
 
     def train_epoch(self, X, y, learning_rate=0.001):
-        # hidden_nodes_s = np.dot(self.W[0], X.T)
-        # hidden_nodes_z = np.maximum(np.zeros((self.hidden_size, np.shape(X)[0]), hidden_nodes_s + self.biases[0]))
-        # last_nodes_s = np.dot(self.W[1], hidden_nodes_z)
-        # last_nodes_z = self.softmax(last_nodes_s)
         for x_i, y_i in zip(X, y):
             self.update_weight(x_i, y_i, learning_rate)
 
@@ -135,10 +133,12 @@ class MLP(object):
         self.biases[0] -= aux_var
         self.W[0] -= aux_var * x_i
         self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T 
+        # print(self.W[1])
 
 
     def softmax(self, x):
-        return np.exp(x) / np.sum(np.exp(x), axis=0)
+        e_x = np.exp(x - np.max(x)) # - np.max(x) helps prevent underflow issues when exponentiating small values
+        return e_x / e_x.sum(axis=0)
 
 
 

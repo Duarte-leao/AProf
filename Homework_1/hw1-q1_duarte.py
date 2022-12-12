@@ -21,9 +21,8 @@ def configure_seed(seed):
 class LinearModel(object):
     def __init__(self, n_classes, n_features, **kwargs):
         self.W = np.zeros((n_classes, n_features))
-
-    def update_weight(self, x_i, y_i, **kwargs):
-        raise NotImplementedError
+    # def update_weight(self, x_i, y_i, **kwargs):
+    #     raise NotImplementedError
 
     def train_epoch(self, X, y, **kwargs):
         for x_i, y_i in zip(X, y):
@@ -54,7 +53,12 @@ class Perceptron(LinearModel):
         other arguments are ignored
         """
         # Q1.1a
-        raise NotImplementedError
+        prediction = self.predict(x_i)
+        if prediction != y_i:
+          self.W[prediction] -= x_i
+          self.W[y_i] += x_i
+
+
 
 
 class LogisticRegression(LinearModel):
@@ -65,22 +69,38 @@ class LogisticRegression(LinearModel):
         learning_rate (float): keep it at the default value for your plots
         """
         # Q1.1b
-        raise NotImplementedError
+        un_probabilities = np.dot(self.W, x_i)
+        probabilities = np.exp(un_probabilities) / np.sum(np.exp(un_probabilities))
+        for j in range(np.shape(self.W)[0]):
+            if j == y_i:
+                error = probabilities[j] - 1
+            else:
+                error = probabilities[j]
+            self.W[j] -= learning_rate * error * x_i
+
 
 
 class MLP(object):
     # Q3.2b. This MLP skeleton code allows the MLP to be used in place of the
     # linear models with no changes to the training loop or evaluation code
     # in main().
-    def __init__(self, n_classes, n_features, hidden_size):
+    def __init__(self, n_classes, n_features, hidden_size, layers):
         # Initialize an MLP with a single hidden layer.
-        raise NotImplementedError
+        self.n_classes = n_classes
+        self.n_features = n_features
+        self.hidden_size = hidden_size
+        self.W = np.array([np.random.normal(0.1,0.1**2, size=(hidden_size, n_features)), np.random.normal(0.1,0.1**2, size=(n_classes, hidden_size))], dtype=object) 
+        self.biases = np.array([np.zeros((hidden_size, 1)), np.zeros((n_classes, 1))], dtype=object)
+
+
 
     def predict(self, X):
         # Compute the forward pass of the network. At prediction time, there is
         # no need to save the values of hidden nodes, whereas this is required
         # at training time.
-        raise NotImplementedError
+        scores = np.dot(self.W[1], np.maximum(np.zeros((self.hidden_size, np.shape(X)[0])), np.dot(self.W[0], X.T) + self.biases[0])) + self.biases[1]
+        pred_labels = scores.argmax(axis=0) 
+        return pred_labels
 
     def evaluate(self, X, y):
         """
@@ -94,7 +114,32 @@ class MLP(object):
         return n_correct / n_possible
 
     def train_epoch(self, X, y, learning_rate=0.001):
-        raise NotImplementedError
+        # hidden_nodes_s = np.dot(self.W[0], X.T)
+        # hidden_nodes_z = np.maximum(np.zeros((self.hidden_size, np.shape(X)[0]), hidden_nodes_s + self.biases[0]))
+        # last_nodes_s = np.dot(self.W[1], hidden_nodes_z)
+        # last_nodes_z = self.softmax(last_nodes_s)
+        for x_i, y_i in zip(X, y):
+            self.update_weight(x_i, y_i, learning_rate)
+
+    def update_weight(self, x_i, y_i, learning_rate):
+        hidden_nodes_s = np.array([np.dot(self.W[0], x_i)])
+        g_prime = np.minimum(np.ones(np.shape(hidden_nodes_s.T)), np.maximum(np.zeros(np.shape(hidden_nodes_s.T)), hidden_nodes_s.T)) # ReLU derivatives of hidden layer 
+        hidden_nodes_z = np.maximum(np.zeros((self.hidden_size, 1)), hidden_nodes_s.T + self.biases[0])
+        last_nodes_s = np.dot(self.W[1], hidden_nodes_z)
+        y_pred = self.softmax(last_nodes_s + self.biases[1])
+        y_true = np.zeros((self.n_classes,1))
+        y_true[y_i] = 1
+        d_Loss = y_pred - y_true
+        self.biases[1] -= learning_rate * d_Loss
+        aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * g_prime
+        self.biases[0] -= aux_var
+        self.W[0] -= aux_var * x_i
+        self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T 
+
+
+    def softmax(self, x):
+        return np.exp(x) / np.sum(np.exp(x), axis=0)
+
 
 
 def plot(epochs, valid_accs, test_accs):

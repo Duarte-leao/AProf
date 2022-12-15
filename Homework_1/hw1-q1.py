@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import utils
+from scipy.special import softmax
 
 
 def configure_seed(seed):
@@ -72,14 +73,35 @@ class MLP(object):
     # Q3.2b. This MLP skeleton code allows the MLP to be used in place of the
     # linear models with no changes to the training loop or evaluation code
     # in main().
-    def __init__(self, n_classes, n_features, hidden_size):
+
+    def softmax1(self, x):
+        e_x = np.exp(x - np.max(x)) # - np.max(x) helps prevent underflow issues when exponentiating small values
+        return e_x / e_x.sum(axis=0)
+
+    def __init__(self, n_classes, n_features, hidden_size,layers):
         # Initialize an MLP with a single hidden layer.
-        raise NotImplementedError
+        self.n_classes = n_classes
+        self.n_features = n_features
+        self.hidden_size = hidden_size
+
+        self.weights1 = np.random.normal(0.1, 0.1**2, size=(self.hidden_size,self.n_features))
+        self.weights2 = np.random.normal(0.1, 0.1**2, size=(self.n_classes, self.hidden_size))
+        self.bias1 = np.zeros((hidden_size,1))
+        self.bias2 = np.zeros((self.n_classes,1))
+
 
     def predict(self, X):
         # Compute the forward pass of the network. At prediction time, there is
         # no need to save the values of hidden nodes, whereas this is required
         # at training time.
+        
+        z1 = np.dot(self.weights1,X.T) + self.bias1
+        h1 = np.maximum(0, z1)
+        z2 = np.dot(self.weights2,h1) + self.bias2
+        f = self.softmax1(z2)
+        y_pred = np.argmax(f, axis=0)
+        return y_pred.ravel()
+
         raise NotImplementedError
 
     def evaluate(self, X, y):
@@ -88,13 +110,40 @@ class MLP(object):
         y (n_examples): gold labels
         """
         # Identical to LinearModel.evaluate()
-        y_hat = self.predict(X)
+        y_hat= self.predict(X)
         n_correct = (y == y_hat).sum()
         n_possible = y.shape[0]
+        
         return n_correct / n_possible
 
     def train_epoch(self, X, y, learning_rate=0.001):
+        for x, Y in zip(X,y):
+            x = x.reshape((self.n_features,1))
+            
+            z1 = np.dot(self.weights1,x) + self.bias1
+            h1 = np.maximum(0, z1)
+            z2 = np.dot(self.weights2,h1) + self.bias2
+            f = self.softmax1(z2)
+
+            y_one = np.zeros((self.n_classes,1))
+            y_one[Y] = 1
+            
+            dw2 =  np.dot((f - y_one), h1.T)
+            db2 = f - y_one
+            z1_d = np.greater(z1.T ,0).astype(int)     # Relu derivative
+            dz1 = np.dot(self.weights2.T,(f - y_one)) * z1_d.T
+            dw1 = np.dot(dz1,x.T)
+            db1 = dz1 
+
+            self.weights2 = self.weights2 - learning_rate * dw2
+            self.bias2 = self.bias2 - learning_rate * db2
+            self.weights1 = self.weights1 - learning_rate * dw1
+            self.bias1 = self.bias1 - learning_rate * db1
+        return
         raise NotImplementedError
+
+    
+
 
 
 def plot(epochs, valid_accs, test_accs):
@@ -159,6 +208,7 @@ def main():
         )
         valid_accs.append(model.evaluate(dev_X, dev_y))
         test_accs.append(model.evaluate(test_X, test_y))
+        print(valid_accs)
 
     # plot
     plot(epochs, valid_accs, test_accs)

@@ -16,21 +16,14 @@ import utils
 class LogisticRegression(nn.Module):
 
     def __init__(self, n_classes, n_features, **kwargs):
-        """
-        n_classes (int)
-        n_features (int)
 
-        The __init__ should be used to declare what kind of layers and other
-        parameters the module has. For example, a logistic regression module
-        has a weight matrix and bias vector. For an idea of how to use
-        pytorch to make weights and biases, have a look at
-        https://pytorch.org/docs/stable/nn.html
-        """
         super().__init__()
-        # In a pytorch module, the declarations of layers needs to come after
-        # the super __init__ line, otherwise the magic doesn't work.
+        self.linear = torch.nn.Linear(n_features, n_classes)
+        
 
     def forward(self, x, **kwargs):
+        outputs = torch.sigmoid(self.linear(x))
+        return outputs
         """
         x (batch_size x n_features): a batch of training examples
 
@@ -50,8 +43,9 @@ class LogisticRegression(nn.Module):
 # Q2.2
 class FeedforwardNetwork(nn.Module):
     def __init__(
-            self, n_classes, n_features, hidden_size, layers,
+            self, n_classes, n_features, hidden_sizes, layers,
             activation_type, dropout, **kwargs):
+
         """
         n_classes (int)
         n_features (int)
@@ -65,7 +59,28 @@ class FeedforwardNetwork(nn.Module):
         includes modules for several activation functions and dropout as well.
         """
         super().__init__()
-        # Implement me!
+
+        self.n_classes = n_classes
+        self.n_features = n_features
+        self.hidden_sizes = hidden_sizes
+        self.layers = layers
+        self.activation_type = activation_type
+        self.dropout = dropout
+
+
+        #linear function
+        self.f1 = nn.Linear(self.n_features,self.hidden_sizes)
+        #non-linear function 
+        if self.activation_type == 'relu':
+            self.activation = nn.ReLU()
+        if self.activation_type == 'tanh':
+            self.activation = nn.Tanh
+        #From hidden layer to hidden layer
+        self.hidden = nn.Linear(self.hidden_sizes, self.hidden_sizes)
+        #linear function
+        self.f2 = nn.Linear(self.hidden_sizes,self.n_classes)
+        #Probability of droupout 
+        self.dropout_l = nn.Dropout(self.dropout)
 
     def forward(self, x, **kwargs):
         """
@@ -75,27 +90,30 @@ class FeedforwardNetwork(nn.Module):
         the output logits from x. This will include using various hidden
         layers, pointwise nonlinear functions, and dropout.
         """
+        out = self.f1(x)
+        out = self.activation(out)
+        out = self.dropout_l(out)
+
+        for i in range(0,self.layers-1):
+            out = self.hidden(out)
+            out = self.activation(out)
+            out = self.dropout_l(out)
+
+        out = self.f2(out)
+        return out 
+
         raise NotImplementedError
 
 
 def train_batch(X, y, model, optimizer, criterion, **kwargs):
-    """
-    X (n_examples x n_features)
-    y (n_examples): gold labels
-    model: a PyTorch defined model
-    optimizer: optimizer used in gradient step
-    criterion: loss function
 
-    To train a batch, the model needs to predict outputs for X, compute the
-    loss between these predictions and the "gold" labels y using the criterion,
-    and compute the gradient of the loss with respect to the model parameters.
-
-    Check out https://pytorch.org/docs/stable/optim.html for examples of how
-    to use an optimizer object to update the parameters.
-
-    This function should return the loss (tip: call loss.item()) to get the
-    loss as a numerical value that is not part of the computation graph.
-    """
+    optimizer.zero_grad()          # Setting our stored gradients equal to zero
+    loss = criterion(model(X), y)  
+    
+    loss.backward()                # Computes the gradient of the given tensor w.r.t. the weights/bias
+    
+    optimizer.step()               # Updates weights and biases with the SGD
+    return loss.item()
     raise NotImplementedError
 
 
@@ -125,6 +143,7 @@ def plot(epochs, plottable, ylabel='', name=''):
     plt.ylabel(ylabel)
     plt.plot(epochs, plottable)
     plt.savefig('%s.pdf' % (name), bbox_inches='tight')
+    plt.show()
 
 
 def main():
@@ -168,7 +187,7 @@ def main():
         model = FeedforwardNetwork(
             n_classes,
             n_feats,
-            opt.hidden_size,
+            opt.hidden_sizes,
             opt.layers,
             opt.activation,
             opt.dropout
@@ -210,10 +229,11 @@ def main():
     if opt.model == "logistic_regression":
         config = "{}-{}".format(opt.learning_rate, opt.optimizer)
     else:
-        config = "{}-{}-{}-{}-{}-{}-{}".format(opt.learning_rate, opt.hidden_size, opt.layers, opt.dropout, opt.activation, opt.optimizer, opt.batch_size)
+        config = "{}-{}-{}-{}-{}-{}-{}".format(opt.learning_rate, opt.hidden_sizes, opt.layers, opt.dropout, opt.activation, opt.optimizer, opt.batch_size)
 
     plot(epochs, train_mean_losses, ylabel='Loss', name='{}-training-loss-{}'.format(opt.model, config))
     plot(epochs, valid_accs, ylabel='Accuracy', name='{}-validation-accuracy-{}'.format(opt.model, config))
+
 
 
 if __name__ == '__main__':

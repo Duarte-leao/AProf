@@ -22,8 +22,6 @@ class LogisticRegression(nn.Module):
         
 
     def forward(self, x, **kwargs):
-        outputs = torch.sigmoid(self.linear(x))
-        return outputs
         """
         x (batch_size x n_features): a batch of training examples
 
@@ -37,8 +35,8 @@ class LogisticRegression(nn.Module):
         forward pass -- this is enough for it to figure out how to do the
         backward pass.
         """
-
-
+        outputs = torch.sigmoid(self.linear(x))
+        return outputs
 
 # Q2.2
 class FeedforwardNetwork(nn.Module):
@@ -210,7 +208,6 @@ def main():
     valid_accs = []
     train_losses = []
     for ii in epochs:
-        a = 
         print('Training epoch {}'.format(ii))
         for X_batch, y_batch in train_dataloader:
             loss = train_batch(

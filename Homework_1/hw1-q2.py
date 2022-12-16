@@ -37,7 +37,7 @@ class LogisticRegression(nn.Module):
         forward pass -- this is enough for it to figure out how to do the
         backward pass.
         """
-        raise NotImplementedError
+
 
 
 # Q2.2
@@ -102,7 +102,6 @@ class FeedforwardNetwork(nn.Module):
         out = self.f2(out)
         return out 
 
-        raise NotImplementedError
 
 
 def train_batch(X, y, model, optimizer, criterion, **kwargs):
@@ -114,7 +113,7 @@ def train_batch(X, y, model, optimizer, criterion, **kwargs):
     
     optimizer.step()               # Updates weights and biases with the SGD
     return loss.item()
-    raise NotImplementedError
+
 
 
 def predict(model, X):
@@ -211,6 +210,7 @@ def main():
     valid_accs = []
     train_losses = []
     for ii in epochs:
+        a = 
         print('Training epoch {}'.format(ii))
         for X_batch, y_batch in train_dataloader:
             loss = train_batch(

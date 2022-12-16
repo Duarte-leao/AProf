@@ -11,6 +11,8 @@ from matplotlib import pyplot as plt
 
 import utils
 
+import time
+
 
 # Q2.1
 class LogisticRegression(nn.Module):
@@ -29,13 +31,16 @@ class LogisticRegression(nn.Module):
         super().__init__()
         # In a pytorch module, the declarations of layers needs to come after
         # the super __init__ line, otherwise the magic doesn't work.
+        
+        self.linear = torch.nn.Linear(n_features, n_classes)
+        
 
     def forward(self, x, **kwargs):
         """
         x (batch_size x n_features): a batch of training examples
 
         Every subclass of nn.Module needs to have a forward() method. forward()
-        describes how the module computes the forward pass. In a log-lineear
+        describes how the module computes the forward pass. In a log-linear
         model like this, for example, forward() needs to compute the logits
         y = Wx + b, and return y (you don't need to worry about taking the
         softmax of y because nn.CrossEntropyLoss does that for you).
@@ -44,7 +49,11 @@ class LogisticRegression(nn.Module):
         forward pass -- this is enough for it to figure out how to do the
         backward pass.
         """
-        raise NotImplementedError
+        outputs = torch.sigmoid(self.linear(x))
+        return outputs
+        
+
+        
 
 
 # Q2.2
@@ -65,6 +74,18 @@ class FeedforwardNetwork(nn.Module):
         includes modules for several activation functions and dropout as well.
         """
         super().__init__()
+        self.layers = layers
+        self.activation_type = activation_type
+        self.dropout = dropout
+        self.hidden_size = hidden_size
+        self.n_features = n_features
+        self.n_classes = n_classes
+        self.W = nn.Parameter(torch.randn(n_classes, hidden_size))
+        self.b = nn.Parameter(torch.randn(n_classes))
+        self.W1 = nn.Parameter(torch.randn(hidden_size, n_features))
+        self.b1 = nn.Parameter(torch.randn(hidden_size))
+        
+
         # Implement me!
 
     def forward(self, x, **kwargs):
@@ -75,7 +96,18 @@ class FeedforwardNetwork(nn.Module):
         the output logits from x. This will include using various hidden
         layers, pointwise nonlinear functions, and dropout.
         """
-        raise NotImplementedError
+        
+        if self.activation_type == 'relu':
+            activation = nn.ReLU()
+        elif self.activation_type == 'tanh':
+            activation = nn.Tanh()
+        else:
+            activation = nn.Sigmoid()
+        x = torch.mm(x, self.W1.t()) + self.b1
+        x = activation(x)
+        x = torch.mm(x, self.W.t()) + self.b
+        return x
+        
 
 
 def train_batch(X, y, model, optimizer, criterion, **kwargs):
@@ -96,7 +128,13 @@ def train_batch(X, y, model, optimizer, criterion, **kwargs):
     This function should return the loss (tip: call loss.item()) to get the
     loss as a numerical value that is not part of the computation graph.
     """
-    raise NotImplementedError
+
+    optimizer.zero_grad()
+    y_hat = model(X)
+    loss = criterion(y_hat, y)
+    loss.backward()
+    optimizer.step()
+    return loss.item()
 
 
 def predict(model, X):
@@ -168,7 +206,7 @@ def main():
         model = FeedforwardNetwork(
             n_classes,
             n_feats,
-            opt.hidden_size,
+            opt.hidden_sizes,
             opt.layers,
             opt.activation,
             opt.dropout
@@ -192,6 +230,7 @@ def main():
     valid_accs = []
     train_losses = []
     for ii in epochs:
+        a = time.time()
         print('Training epoch {}'.format(ii))
         for X_batch, y_batch in train_dataloader:
             loss = train_batch(
@@ -204,6 +243,7 @@ def main():
         train_mean_losses.append(mean_loss)
         valid_accs.append(evaluate(model, dev_X, dev_y))
         print('Valid acc: %.4f' % (valid_accs[-1]))
+        print('Time: %.4f' % (time.time() - a))
 
     print('Final Test acc: %.4f' % (evaluate(model, test_X, test_y)))
     # plot

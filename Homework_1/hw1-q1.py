@@ -140,7 +140,7 @@ class MLP(object):
             self.bias2 = self.bias2 - learning_rate * db2
             self.weights1 = self.weights1 - learning_rate * dw1
             self.bias1 = self.bias1 - learning_rate * db1
-        return
+        
 
 
     

@@ -103,7 +103,7 @@ class MLP(object):
         y_pred = np.argmax(f, axis=0)
         return y_pred.ravel()
 
-        raise NotImplementedError
+
 
     def evaluate(self, X, y):
         """
@@ -114,7 +114,7 @@ class MLP(object):
         y_hat= self.predict(X)
         n_correct = (y == y_hat).sum()
         n_possible = y.shape[0]
-        
+        print(n_correct / n_possible)
         return n_correct / n_possible
 
     def train_epoch(self, X, y, learning_rate=0.001):

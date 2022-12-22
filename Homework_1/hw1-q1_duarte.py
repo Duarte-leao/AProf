@@ -100,8 +100,8 @@ class MLP(object):
         # Compute the forward pass of the network. At prediction time, there is
         # no need to save the values of hidden nodes, whereas this is required
         # at training time.
-        scores = np.dot(self.W[1], np.maximum(np.zeros((self.hidden_size, np.shape(X)[0])), np.dot(self.W[0], X.T) + self.biases[0])) + self.biases[1]
-        pred_labels = scores.argmax(axis=0) 
+        scores = np.dot(self.W[1], np.maximum(0, np.dot(self.W[0], X.T) + self.biases[0])) + self.biases[1] 
+        pred_labels = scores.argmax(axis=0)  
         return pred_labels
 
     def evaluate(self, X, y):
@@ -118,23 +118,23 @@ class MLP(object):
 
     def train_epoch(self, X, y, learning_rate=0.001):
         for x_i, y_i in zip(X, y):
-            self.update_weight(x_i, y_i, learning_rate)
+            self.update_weight(x_i, y_i, learning_rate) 
 
     def update_weight(self, x_i, y_i, learning_rate):
-        hidden_nodes_s = np.array([np.dot(self.W[0], x_i)])
-        g_prime = np.minimum(np.ones(np.shape(hidden_nodes_s.T)), np.maximum(np.zeros(np.shape(hidden_nodes_s.T)), hidden_nodes_s.T)) # ReLU derivatives of hidden layer 
-        hidden_nodes_z = np.maximum(np.zeros((self.hidden_size, 1)), hidden_nodes_s.T + self.biases[0])
-        last_nodes_s = np.dot(self.W[1], hidden_nodes_z)
-        y_pred = self.softmax(last_nodes_s + self.biases[1])
-        y_true = np.zeros((self.n_classes,1))
-        y_true[y_i] = 1
-        d_Loss = y_pred - y_true
-        self.biases[1] -= learning_rate * d_Loss
-        aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * g_prime
-        self.biases[0] -= aux_var
-        self.W[0] -= aux_var * x_i
-        self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T 
-        # print(self.W[1])
+        hidden_nodes_s = np.array([np.dot(self.W[0], x_i)]) # hidden layer
+        hidden_nodes_z = np.maximum(0, hidden_nodes_s.T + self.biases[0]) # ReLU of hidden layer
+        last_nodes_s = np.dot(self.W[1], hidden_nodes_z) # output layer
+        y_pred = self.softmax(last_nodes_s + self.biases[1]) # softmax of output layer
+        y_true = np.zeros((self.n_classes,1)) # gold labels
+        y_true[y_i] = 1     
+        ReLU_prime = np.where(hidden_nodes_s.T > 0, 1, 0) # ReLU derivatives of hidden layer
+        d_Loss = y_pred - y_true # loss derivative
+        self.biases[1] -= learning_rate * d_Loss # update biases of output layer
+        aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * ReLU_prime # auxiliar variable
+        self.biases[0] -= aux_var # update biases of hidden layer
+        self.W[0] -= aux_var * x_i # update weights of hidden layer
+        self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T  # update weights of output layer
+
 
 
     def softmax(self, x):
@@ -206,7 +206,7 @@ def main():
         )
         valid_accs.append(model.evaluate(dev_X, dev_y))
         test_accs.append(model.evaluate(test_X, test_y))
-        print(time.time()-a)
+        print('time',time.time()-a)
     # plot
     plot(epochs, valid_accs, test_accs)
 

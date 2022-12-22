@@ -22,7 +22,7 @@ class LogisticRegression(nn.Module):
         
 
     def forward(self, x, **kwargs):
-        outputs = self.linear(x)
+        outputs = torch.sigmoid(self.linear(x))
         return outputs
         """
         x (batch_size x n_features): a batch of training examples
@@ -37,8 +37,8 @@ class LogisticRegression(nn.Module):
         forward pass -- this is enough for it to figure out how to do the
         backward pass.
         """
-        raise NotImplementedError
-
+        outputs = torch.sigmoid(self.linear(x))
+        return outputs
 
 # Q2.2
 class FeedforwardNetwork(nn.Module):
@@ -102,7 +102,6 @@ class FeedforwardNetwork(nn.Module):
         out = self.f2(out)
         return out 
 
-        raise NotImplementedError
 
 
 def train_batch(X, y, model, optimizer, criterion, **kwargs):
@@ -114,7 +113,7 @@ def train_batch(X, y, model, optimizer, criterion, **kwargs):
     
     optimizer.step()               # Updates weights and biases with the SGD
     return loss.item()
-    raise NotImplementedError
+
 
 
 def predict(model, X):

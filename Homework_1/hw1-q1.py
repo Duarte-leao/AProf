@@ -10,7 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import utils
-from scipy.special import softmax
+
+import time
 
 
 def configure_seed(seed):
@@ -102,7 +103,7 @@ class MLP(object):
         y_pred = np.argmax(f, axis=0)
         return y_pred.ravel()
 
-        raise NotImplementedError
+
 
     def evaluate(self, X, y):
         """
@@ -113,7 +114,7 @@ class MLP(object):
         y_hat= self.predict(X)
         n_correct = (y == y_hat).sum()
         n_possible = y.shape[0]
-        
+        print(n_correct / n_possible)
         return n_correct / n_possible
 
     def train_epoch(self, X, y, learning_rate=0.001):
@@ -139,8 +140,8 @@ class MLP(object):
             self.bias2 = self.bias2 - learning_rate * db2
             self.weights1 = self.weights1 - learning_rate * dw1
             self.bias1 = self.bias1 - learning_rate * db1
-        return
-        raise NotImplementedError
+        
+
 
     
 
@@ -201,6 +202,7 @@ def main():
         train_order = np.random.permutation(train_X.shape[0])
         train_X = train_X[train_order]
         train_y = train_y[train_order]
+        a = time.time()
         model.train_epoch(
             train_X,
             train_y,
@@ -208,6 +210,7 @@ def main():
         )
         valid_accs.append(model.evaluate(dev_X, dev_y))
         test_accs.append(model.evaluate(test_X, test_y))
+        print(valid_accs)
 
     # plot
     plot(epochs, valid_accs, test_accs)

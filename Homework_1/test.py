@@ -13,7 +13,6 @@ import utils
 
 import time
 
-
 def configure_seed(seed):
     os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
@@ -23,9 +22,8 @@ def configure_seed(seed):
 class LinearModel(object):
     def __init__(self, n_classes, n_features, **kwargs):
         self.W = np.zeros((n_classes, n_features))
-
-    def update_weight(self, x_i, y_i, **kwargs):
-        raise NotImplementedError
+    # def update_weight(self, x_i, y_i, **kwargs):
+    #     raise NotImplementedError
 
     def train_epoch(self, X, y, **kwargs):
         for x_i, y_i in zip(X, y):
@@ -42,9 +40,10 @@ class LinearModel(object):
         X (n_examples x n_features):
         y (n_examples): gold labels
         """
-        y_hat = self.predict(X)   
+        y_hat = self.predict(X)
         n_correct = (y == y_hat).sum()
         n_possible = y.shape[0]
+        print(n_correct / n_possible)
         return n_correct / n_possible
 
 
@@ -60,6 +59,8 @@ class Perceptron(LinearModel):
         if prediction != y_i:
           self.W[prediction] -= x_i
           self.W[y_i] += x_i
+
+
 
 
 class LogisticRegression(LinearModel):
@@ -80,40 +81,28 @@ class LogisticRegression(LinearModel):
             self.W[j] -= learning_rate * error * x_i
 
 
+
 class MLP(object):
     # Q3.2b. This MLP skeleton code allows the MLP to be used in place of the
     # linear models with no changes to the training loop or evaluation code
     # in main().
-
-    def softmax1(self, x):
-        e_x = np.exp(x - np.max(x)) # - np.max(x) helps prevent underflow issues when exponentiating small values
-        return e_x / e_x.sum(axis=0)
-
-    def __init__(self, n_classes, n_features, hidden_size,layers):
+    def __init__(self, n_classes, n_features, hidden_size, layers):
         # Initialize an MLP with a single hidden layer.
-        self.n_classes = n_classes 
+        self.n_classes = n_classes
         self.n_features = n_features
         self.hidden_size = hidden_size
+        self.W = np.array([np.random.normal(0.1,0.1, size=(hidden_size, n_features)), np.random.normal(0.1,0.1, size=(n_classes, hidden_size))], dtype=object) 
+        self.biases = np.array([np.zeros((hidden_size, 1)), np.zeros((n_classes, 1))], dtype=object)
 
-        self.weights1 = np.random.normal(0.1, 0.1, size=(self.hidden_size,self.n_features)) 
-        self.weights2 = np.random.normal(0.1, 0.1, size=(self.n_classes, self.hidden_size))  
-        self.bias1 = np.zeros((hidden_size,1))
-        self.bias2 = np.zeros((self.n_classes,1))
 
 
     def predict(self, X):
         # Compute the forward pass of the network. At prediction time, there is
         # no need to save the values of hidden nodes, whereas this is required
         # at training time.
-        
-        z1 = np.dot(self.weights1,X.T) + self.bias1
-        h1 = np.maximum(0, z1)
-        z2 = np.dot(self.weights2,h1) + self.bias2
-        f = self.softmax1(z2)
-        y_pred = np.argmax(f, axis=0)
-        return y_pred.ravel()
-
-
+        scores = np.dot(self.W[1], np.maximum(0, np.dot(self.W[0], X.T) + self.biases[0])) + self.biases[1] 
+        pred_labels = scores.argmax(axis=0)  
+        return pred_labels
 
     def evaluate(self, X, y):
         """
@@ -121,39 +110,79 @@ class MLP(object):
         y (n_examples): gold labels
         """
         # Identical to LinearModel.evaluate()
-        y_hat= self.predict(X)
+        y_hat = self.predict(X)
         n_correct = (y == y_hat).sum()
         n_possible = y.shape[0]
         print(n_correct / n_possible)
         return n_correct / n_possible
 
     def train_epoch(self, X, y, learning_rate=0.001):
-        for x, Y in zip(X,y):
-            x = x.reshape((self.n_features,1)) 
-            
-            z1 = np.dot(self.weights1,x) + self.bias1 
-            h1 = np.maximum(0, z1) # Relu activation
-            z2 = np.dot(self.weights2,h1) + self.bias2 
-            f = self.softmax1(z2) # Softmax activation
+        for x_i, y_i in zip(X, y):
+            # self.update_weight(x_i, y_i, learning_rate)
+            hidden_nodes_s = np.array([self.W[0].dot(x_i)]) # hidden layer
+            # print(hidden_nodes_s.shape)
+            hidden_nodes_z = np.maximum(0, hidden_nodes_s.T + self.biases[0]) # ReLU of hidden layer
+            last_nodes_s = self.W[1].dot(hidden_nodes_z) # output layer
+            y_pred = self.softmax(last_nodes_s + self.biases[1]) # softmax of output layer
+            y_true = np.zeros((self.n_classes,1)) # gold labels
+            y_true[y_i] = 1     
+            # ReLU_prime = np.where(hidden_nodes_s.T > 0, 1, 0) # ReLU derivatives of hidden layer
+            ReLU_prime = hidden_nodes_s.T > 0
+            d_Loss = y_pred - y_true # loss derivative
+            # print(np.shape(ReLU_prime))
+            # print(np.shape(self.W[1].T.dot(d_Loss)))
+            # print((d_Loss.T.dot(self.W[1])).T - self.W[1].T.dot(d_Loss))
+            self.biases[1] -= learning_rate * d_Loss # update biases of output layer
+            aux_var = learning_rate * (d_Loss.T.dot(self.W[1])).T * ReLU_prime # auxiliar variable
+            # aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * ReLU_prime # auxiliar variable
+            self.biases[0] -= aux_var # update biases of hidden layer
+            self.W[0] -= aux_var * x_i # update weights of hidden layer
+            self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T  # update weights of output layer
 
-            y_one = np.zeros((self.n_classes,1))        
-            y_one[Y] = 1
-            
-            dw2 =  np.dot((f - y_one), h1.T)
-            db2 = f - y_one
-            z1_d = z1.T > 0 # Relu derivative
-            dz1 = np.dot(self.weights2.T,(f - y_one)) * z1_d.T
-            dw1 = np.dot(dz1,x.T)
-            db1 = dz1 
+        print(1) 
 
-            self.weights2 = self.weights2 - learning_rate * dw2   
-            self.bias2 = self.bias2 - learning_rate * db2
-            self.weights1 = self.weights1 - learning_rate * dw1
-            self.bias1 = self.bias1 - learning_rate * db1
-        
+    def update_weight(self, x_i, y_i, learning_rate):
+        # hidden_nodes_s = np.array([np.dot(self.W[0], x_i)]) # hidden layer
+        # hidden_nodes_z = np.maximum(0, hidden_nodes_s.T + self.biases[0]) # ReLU of hidden layer
+        # last_nodes_s = np.dot(self.W[1], hidden_nodes_z) # output layer
+        # y_pred = self.softmax(last_nodes_s + self.biases[1]) # softmax of output layer
+        # y_true = np.zeros((self.n_classes,1)) # gold labels
+        # y_true[y_i] = 1     
+        # ReLU_prime = np.where(hidden_nodes_s.T > 0, 1, 0) # ReLU derivatives of hidden layer
+        # d_Loss = y_pred - y_true # loss derivative
+        # self.biases[1] -= learning_rate * d_Loss # update biases of output layer
+        # aux_var = learning_rate * np.dot(d_Loss.T, self.W[1]) * ReLU_prime # auxiliar variable
+        # # aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * ReLU_prime # auxiliar variable
+        # self.biases[0] -= aux_var # update biases of hidden layer
+        # self.W[0] -= aux_var * x_i # update weights of hidden layer
+        # self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T  # update weights of output layer
+
+        hidden_nodes_s = np.array([self.W[0].dot(x_i)]) # hidden layer
+        # print(hidden_nodes_s.shape)
+        hidden_nodes_z = np.maximum(0, hidden_nodes_s.T + self.biases[0]) # ReLU of hidden layer
+        last_nodes_s = self.W[1].dot(hidden_nodes_z) # output layer
+        y_pred = self.softmax(last_nodes_s + self.biases[1]) # softmax of output layer
+        y_true = np.zeros((self.n_classes,1)) # gold labels
+        y_true[y_i] = 1     
+        # ReLU_prime = np.where(hidden_nodes_s.T > 0, 1, 0) # ReLU derivatives of hidden layer
+        ReLU_prime = hidden_nodes_s.T > 0
+        d_Loss = y_pred - y_true # loss derivative
+        # print(np.shape(ReLU_prime))
+        # print(np.shape(self.W[1].T.dot(d_Loss)))
+        # print((d_Loss.T.dot(self.W[1])).T - self.W[1].T.dot(d_Loss))
+        self.biases[1] -= learning_rate * d_Loss # update biases of output layer
+        aux_var = learning_rate * (d_Loss.T.dot(self.W[1])).T * ReLU_prime # auxiliar variable
+        # aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * ReLU_prime # auxiliar variable
+        self.biases[0] -= aux_var # update biases of hidden layer
+        self.W[0] -= aux_var * x_i # update weights of hidden layer
+        self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T  # update weights of output layer
+
+        print(1)
 
 
-    
+    def softmax(self, x):
+        e_x = np.exp(x - np.max(x)) # - np.max(x) helps prevent underflow issues when exponentiating small values
+        return e_x / e_x.sum(axis=0)
 
 
 
@@ -169,8 +198,7 @@ def plot(epochs, valid_accs, test_accs):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('model',
-                        choices=['perceptron', 'logistic_regression', 'mlp'],
+    parser.add_argument('-model',type = str, default='mlp',
                         help="Which model should the script run?")
     parser.add_argument('-epochs', default=20, type=int,
                         help="""Number of epochs to train for. You should not
@@ -220,9 +248,7 @@ def main():
         )
         valid_accs.append(model.evaluate(dev_X, dev_y))
         test_accs.append(model.evaluate(test_X, test_y))
-        print(valid_accs)
         print('time',time.time()-a)
-
     # plot
     plot(epochs, valid_accs, test_accs)
 

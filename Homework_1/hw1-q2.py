@@ -68,7 +68,7 @@ class FeedforwardNetwork(nn.Module):
 
         #linear function
         self.f1 = nn.Linear(self.n_features,self.hidden_sizes)
-        #non-linear function 
+        #Non-linear function 
         if self.activation_type == 'relu':
             self.activation = nn.ReLU()
         if self.activation_type == 'tanh':

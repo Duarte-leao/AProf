@@ -91,7 +91,7 @@ class MLP(object):
         self.n_classes = n_classes
         self.n_features = n_features
         self.hidden_size = hidden_size
-        self.W = np.array([np.random.normal(0.1,0.1**2, size=(hidden_size, n_features)), np.random.normal(0.1,0.1**2, size=(n_classes, hidden_size))], dtype=object) 
+        self.W = np.array([np.random.normal(0.1,0.1, size=(hidden_size, n_features)), np.random.normal(0.1,0.1, size=(n_classes, hidden_size))], dtype=object) 
         self.biases = np.array([np.zeros((hidden_size, 1)), np.zeros((n_classes, 1))], dtype=object)
 
 
@@ -121,16 +121,37 @@ class MLP(object):
             self.update_weight(x_i, y_i, learning_rate) 
 
     def update_weight(self, x_i, y_i, learning_rate):
-        hidden_nodes_s = np.array([np.dot(self.W[0], x_i)]) # hidden layer
+        # hidden_nodes_s = np.array([np.dot(self.W[0], x_i)]) # hidden layer
+        # hidden_nodes_z = np.maximum(0, hidden_nodes_s.T + self.biases[0]) # ReLU of hidden layer
+        # last_nodes_s = np.dot(self.W[1], hidden_nodes_z) # output layer
+        # y_pred = self.softmax(last_nodes_s + self.biases[1]) # softmax of output layer
+        # y_true = np.zeros((self.n_classes,1)) # gold labels
+        # y_true[y_i] = 1     
+        # ReLU_prime = np.where(hidden_nodes_s.T > 0, 1, 0) # ReLU derivatives of hidden layer
+        # d_Loss = y_pred - y_true # loss derivative
+        # self.biases[1] -= learning_rate * d_Loss # update biases of output layer
+        # aux_var = learning_rate * np.dot(d_Loss.T, self.W[1]) * ReLU_prime # auxiliar variable
+        # # aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * ReLU_prime # auxiliar variable
+        # self.biases[0] -= aux_var # update biases of hidden layer
+        # self.W[0] -= aux_var * x_i # update weights of hidden layer
+        # self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T  # update weights of output layer
+
+        hidden_nodes_s = np.array([self.W[0].dot(x_i)]) # hidden layer
+        # print(hidden_nodes_s.shape)
         hidden_nodes_z = np.maximum(0, hidden_nodes_s.T + self.biases[0]) # ReLU of hidden layer
-        last_nodes_s = np.dot(self.W[1], hidden_nodes_z) # output layer
+        last_nodes_s = self.W[1].dot(hidden_nodes_z) # output layer
         y_pred = self.softmax(last_nodes_s + self.biases[1]) # softmax of output layer
         y_true = np.zeros((self.n_classes,1)) # gold labels
         y_true[y_i] = 1     
-        ReLU_prime = np.where(hidden_nodes_s.T > 0, 1, 0) # ReLU derivatives of hidden layer
+        # ReLU_prime = np.where(hidden_nodes_s.T > 0, 1, 0) # ReLU derivatives of hidden layer
+        ReLU_prime = hidden_nodes_s.T > 0
         d_Loss = y_pred - y_true # loss derivative
+        # print(np.shape(ReLU_prime))
+        # print(np.shape(self.W[1].T.dot(d_Loss)))
+        # print((d_Loss.T.dot(self.W[1])).T - self.W[1].T.dot(d_Loss))
         self.biases[1] -= learning_rate * d_Loss # update biases of output layer
-        aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * ReLU_prime # auxiliar variable
+        aux_var = learning_rate * (d_Loss.T.dot(self.W[1])).T * ReLU_prime # auxiliar variable
+        # aux_var = learning_rate * np.dot(self.W[1].T, d_Loss) * ReLU_prime # auxiliar variable
         self.biases[0] -= aux_var # update biases of hidden layer
         self.W[0] -= aux_var * x_i # update weights of hidden layer
         self.W[1] -= learning_rate * d_Loss * hidden_nodes_z.T  # update weights of output layer

@@ -22,7 +22,7 @@ class LogisticRegression(nn.Module):
         
 
     def forward(self, x, **kwargs):
-        outputs = torch.sigmoid(self.linear(x))
+        outputs = self.linear(x)
         return outputs
         """
         x (batch_size x n_features): a batch of training examples
@@ -70,7 +70,7 @@ class FeedforwardNetwork(nn.Module):
 
         #linear function
         self.f1 = nn.Linear(self.n_features,self.hidden_sizes)
-        #non-linear function 
+        #Non-linear function 
         if self.activation_type == 'relu':
             self.activation = nn.ReLU()
         if self.activation_type == 'tanh':

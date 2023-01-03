@@ -221,7 +221,6 @@ def main():
         valid_accs.append(model.evaluate(dev_X, dev_y))
         test_accs.append(model.evaluate(test_X, test_y))
         print(valid_accs)
-        print('time',time.time()-a)
 
     # plot
     plot(epochs, valid_accs, test_accs)

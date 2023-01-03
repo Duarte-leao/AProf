@@ -22,6 +22,8 @@ class LogisticRegression(nn.Module):
         
 
     def forward(self, x, **kwargs):
+        outputs = self.linear(x)
+        return outputs
         """
         x (batch_size x n_features): a batch of training examples
 
@@ -72,7 +74,7 @@ class FeedforwardNetwork(nn.Module):
         if self.activation_type == 'relu':
             self.activation = nn.ReLU()
         if self.activation_type == 'tanh':
-            self.activation = nn.Tanh
+            self.activation = nn.Tanh()
         #From hidden layer to hidden layer
         self.hidden = nn.Linear(self.hidden_sizes, self.hidden_sizes)
         #linear function

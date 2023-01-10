@@ -11,9 +11,10 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
 from data import collate_samples, MTDataset, PAD_IDX, SOS_IDX, EOS_IDX
-from models_duarte import Encoder, Decoder, Seq2Seq, Attention, reshape_state
+from models_mesquita import Encoder, Decoder, Seq2Seq, Attention, reshape_state
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def configure_seed(seed):
     random.seed(seed)
@@ -65,13 +66,6 @@ def train(data, model, lr, n_epochs, padding_idx):
 
             optimizer.zero_grad()
             outputs, _ = model(src, src_lengths, tgt)
-            # print(outputs.shape)
-            # print(tgt.shape)
-            # print(outputs[0,0,:])
-            # print(tgt[0])
-            
-            # print(outputs.reshape(-1, outputs.shape[-1]).shape)
-            # print(tgt[:, 1:].reshape(-1).shape)
             loss = criterion(
                 outputs.reshape(-1, outputs.shape[-1]), tgt[:, 1:].reshape(-1)
             )
@@ -113,6 +107,7 @@ def test(model, data_iter, data_type, examples_idx=None):
             i = 1
             stop = False
             final_seq = [tgt_pred.view(-1)]
+
             encoder_outputs, final_enc_state = model.encoder(src, src_lengths)
             dec_state = final_enc_state
 
@@ -215,6 +210,7 @@ def main():
 
     src_vocab_size = train_dataset.input_lang.n_words
     tgt_vocab_size = train_dataset.output_lang.n_words
+
     padding_idx = PAD_IDX
 
     encoder = Encoder(

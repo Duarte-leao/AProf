@@ -33,7 +33,7 @@ class Attention(nn.Module):
         # encoder_outputs: (batch_size, max_src_len, hidden_dim)
         # src_lengths: (batch_size)
         # we will need to use this mask to assign float("-inf") in the attention scores
-        # of the padding tokens (such that the output of the softmax is 0 in those positions)
+        # of the padding tokens (such that the output of the softmax is 0 in those positi
         # Tip: use torch.masked_fill to do this
         # src_seq_mask: (batch_size, max_src_len)
         # the "~" is the elementwise NOT operator

@@ -1,8 +1,8 @@
 clear
 %%
-H=4;
-W=7;
-M=3;
+H=3;
+W=4;
+M=2;
 N=2;
 H_prime= H - M +1;
 W_prime = W - N+1;

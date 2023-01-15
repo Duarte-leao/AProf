@@ -37,8 +37,6 @@ class LogisticRegression(nn.Module):
         forward pass -- this is enough for it to figure out how to do the
         backward pass.
         """
-        outputs = torch.sigmoid(self.linear(x))
-        return outputs
 
 # Q2.2
 class FeedforwardNetwork(nn.Module):

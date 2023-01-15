@@ -74,7 +74,6 @@ class CNN(nn.Module):
         output= F.log_softmax(output , dim=1 )
         return output
 
-        raise NotImplementedError
 
 def train_batch(X, y, model, optimizer, criterion, **kwargs):
     """

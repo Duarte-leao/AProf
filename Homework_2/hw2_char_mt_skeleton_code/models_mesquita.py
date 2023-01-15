@@ -31,15 +31,16 @@ class Attention(nn.Module):
     ):
 
         z = self.linear_in(query)
-        print('z', z.shape , 'encoder', encoder_outputs.shape)
+        print('q', query.shape, 'z', z.shape , 'encoder', encoder_outputs.shape)
         s = torch.bmm(z, encoder_outputs.transpose(1,2))
+        print('s', s.shape)
         src_seq_mask = ~self.sequence_mask(src_lengths)
         s.torch.masked_fill(src_seq_mask,float("-inf") )
         s =torch.masked_fill(s ,src_seq_mask) 
         p = torch.functional.softmax(s)
         c = torch.bmm(encoder_outputs, p)
         q_c = torch.cat((query,c))
-        a = torch.functional.tanh(self.linear_out(q_c))
+        attn_out = torch.functional.tanh(self.linear_out(q_c))
 
 
         # query: (batch_size, 1, hidden_dim)
@@ -204,8 +205,8 @@ class Decoder(nn.Module):
         #   the previous token representation and the previous decoder state
         # - Add this somewhere in the decoder loop when you implement the attention mechanism in 3.2:
         if self.attn is not None:
-            output = self.attn(
-                output,
+            outputs= self.attn(
+                outputs,
                 encoder_outputs,
                 src_lengths,
              )
